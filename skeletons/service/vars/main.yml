@@ -1,0 +1,11 @@
+---
+# =============================================================================
+# SERVICE: __SERVICE__ — IDENTITY / composition knobs
+# =============================================================================
+# Put here the knobs that DEFINE this service (which instance name, which files,
+# which brick options). They live in vars/ (not defaults/) so they beat the
+# consuming brick's own defaults during that brick's execution. Point file paths
+# at THIS service via playbook_dir (NOT {{ role_path }}, which would resolve to
+# the brick). Example:
+# app_name: "__SERVICE__"
+# app_config_src: "{{ playbook_dir }}/../roles/services/__SERVICE__/files/config"

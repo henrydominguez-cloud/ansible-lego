@@ -1,0 +1,4 @@
+---
+# Lab-wide vars (no vault here; secret-wired vars fall back to their inline
+# placeholders, which is fine for local testing).
+env: lab

@@ -1,0 +1,45 @@
+# ── Secrets — NEVER commit ──
+# (gitignore does NOT support trailing inline comments on pattern lines)
+.vault_pass
+*vault_pass*
+# ...but the placeholder IS committed:
+!.vault_pass.example
+# Plaintext vault files are ignored so a decrypted secret is never committed by
+# accident. The *.example scaffolding IS committed. Once your vault.yml files
+# are ansible-vault ENCRYPTED, you may un-ignore them (remove the line below or
+# add `!path/to/vault.yml`) to commit the encrypted versions.
+vault.yml
+!*vault.yml.example
+vars/secrets.yml
+vars/secrets.yaml
+secrets/
+*.pem
+*.key
+auth_keys.txt
+credentials.json
+
+# ── Large app artifacts (vendor locally or via Git LFS) ──
+*.jar
+!**/files/.gitkeep
+
+# ── Large / binary shared assets (vendor locally or via Git LFS) ──
+resources/**/sounds/**
+!resources/**/sounds/.gitkeep
+resources/**/*.db
+resources/**/lib/*.so
+resources/**/lib/*.so.*
+resources/**/rpms/*.rpm
+
+# ── Ansible runtime noise ──
+*.retry
+*.log
+.ansible/
+collections/
+roles/galaxy/
+
+# ── Editor / OS ──
+.DS_Store
+*.swp
+
+# lint venv
+.venv-lint/

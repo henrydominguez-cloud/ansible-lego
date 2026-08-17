@@ -1,0 +1,6 @@
+REPLACE_WITH_YOUR_VAULT_PASSWORD
+# Copy this file to `.vault_pass` (which is git-ignored) and put the real
+# Ansible Vault password on the first line. Then either:
+#   - uncomment `vault_password_file = .vault_pass` in ansible.cfg, or
+#   - pass `--vault-password-file .vault_pass` on each ansible-playbook run.
+# NEVER commit the real .vault_pass.

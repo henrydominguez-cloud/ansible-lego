@@ -1,0 +1,71 @@
+---
+# =============================================================================
+# BRICK: components/__COMPONENT__ — entry point
+# =============================================================================
+# Tags: install | config | service  (so callers can run just a slice with --tags)
+
+- name: "__COMPONENT__ | Gather facts"
+  ansible.builtin.setup:
+  tags: [always]
+
+- name: "__COMPONENT__ | Require a supported EL (RHEL/Rocky/Oracle) 8/9 host"
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "RedHat"
+      - ansible_distribution_major_version in ['8', '9']
+    fail_msg: "This brick supports Enterprise Linux 8/9 only."
+  tags: [always]
+
+# --- install: repo (default) or local RPMs (air-gapped) --------------------
+- name: "__COMPONENT__ | Install (repo)"
+  ansible.builtin.yum:
+    name: "{{ __COMPONENT___package }}"
+    state: present
+  register: __COMPONENT___repo_install
+  ignore_errors: "{{ __COMPONENT___install_source == 'auto' }}"
+  when: __COMPONENT___install_source in ['repo', 'auto']
+  tags: [install]
+
+- name: "__COMPONENT__ | Find local RPMs"
+  ansible.builtin.find:
+    paths: "{{ __COMPONENT___local_rpms_dir }}"
+    patterns: "*.rpm"
+  register: __COMPONENT___local_found
+  when: >-
+    __COMPONENT___install_source == 'local'
+    or (__COMPONENT___install_source == 'auto' and __COMPONENT___repo_install is failed)
+  tags: [install]
+
+- name: "__COMPONENT__ | Install from local RPMs (offline)"
+  ansible.builtin.yum:
+    name: "{{ __COMPONENT___local_found.files | map(attribute='path') | list }}"
+    state: present
+    disable_gpg_check: true
+  when:
+    - __COMPONENT___local_found is not skipped
+    - __COMPONENT___local_found.files | length > 0
+  tags: [install]
+
+# --- config ----------------------------------------------------------------
+# TODO: template your config files here. Use `| default(...)` for service knobs:
+# - name: "__COMPONENT__ | Deploy config"
+#   ansible.builtin.template:
+#     src: main.conf.j2
+#     dest: /etc/__COMPONENT__/main.conf
+#   notify: Restart __COMPONENT__
+#   tags: [config]
+#
+# If you copy a big asset the CALLER ships from resources/, check it exists on
+# the CONTROLLER first (not the remote):
+#   - ansible.builtin.stat: { path: "{{ some_src }}" }
+#     delegate_to: localhost
+#     become: false
+
+# --- service ---------------------------------------------------------------
+- name: "__COMPONENT__ | Enable and start"
+  ansible.builtin.service:
+    name: "__COMPONENT__"
+    state: started
+    enabled: true
+  when: not ansible_check_mode
+  tags: [service]

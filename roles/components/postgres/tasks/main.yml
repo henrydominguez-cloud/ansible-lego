@@ -1,0 +1,114 @@
+---
+# =============================================================================
+# BRICK: components/postgres — entry point
+# =============================================================================
+# Tags: install | config | service | databases
+
+- name: "POSTGRES | Gather facts"
+  ansible.builtin.setup:
+  tags: [always]
+
+- name: "POSTGRES | Require a supported EL (RHEL/Rocky/Oracle) 8/9 host"
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "RedHat"
+      - ansible_distribution_major_version in ['8', '9']
+    fail_msg: "This brick supports Enterprise Linux 8/9 only."
+  tags: [always]
+
+# --- install: repo (default) or local RPMs (air-gapped) --------------------
+- name: "POSTGRES | Install server + client (repo)"
+  ansible.builtin.yum:
+    name:
+      - "{{ postgres_package }}"
+      - "{{ postgres_client_package }}"
+    state: present
+  register: postgres_repo_install
+  ignore_errors: "{{ postgres_install_source == 'auto' }}"
+  when: postgres_install_source in ['repo', 'auto']
+  tags: [install]
+
+- name: "POSTGRES | Find local RPMs"
+  ansible.builtin.find:
+    paths: "{{ postgres_local_rpms_dir }}"
+    patterns: "*.rpm"
+  register: postgres_local_found
+  when: >-
+    postgres_install_source == 'local'
+    or (postgres_install_source == 'auto' and postgres_repo_install is failed)
+  tags: [install]
+
+- name: "POSTGRES | Install from local RPMs (offline)"
+  ansible.builtin.yum:
+    name: "{{ postgres_local_found.files | map(attribute='path') | list }}"
+    state: present
+    disable_gpg_check: true
+  when:
+    - postgres_local_found is not skipped
+    - postgres_local_found.files | length > 0
+  tags: [install]
+
+# --- initialise the data directory (only once) -----------------------------
+- name: "POSTGRES | Check whether the data dir is initialised"
+  ansible.builtin.stat:
+    path: "{{ postgres_data_dir }}/PG_VERSION"
+  register: postgres_pgversion
+  tags: [config]
+
+- name: "POSTGRES | Initialise the database cluster"
+  ansible.builtin.command: /usr/bin/postgresql-setup --initdb
+  when: not postgres_pgversion.stat.exists
+  tags: [config]
+
+- name: "POSTGRES | Set port (when a service overrides the default)"
+  ansible.builtin.lineinfile:
+    path: "{{ postgres_data_dir }}/postgresql.conf"
+    regexp: '^\s*#?\s*port\s*='
+    line: "port = {{ postgres_port | default(5432) }}"
+  when: postgres_pgversion.stat.exists or not ansible_check_mode
+  notify: Restart postgres
+  tags: [config]
+
+- name: "POSTGRES | Enable and start"
+  ansible.builtin.service:
+    name: "{{ postgres_service }}"
+    state: started
+    enabled: true
+  when: not ansible_check_mode
+  tags: [service]
+
+# --- optional databases + roles a SERVICE asked for ------------------------
+# Idempotent via a SELECT guard (avoids needing psycopg2 on the target).
+- name: "POSTGRES | Create databases"
+  ansible.builtin.shell: |
+    if psql -tAc "SELECT 1 FROM pg_database WHERE datname='{{ item.name }}'" | grep -q 1; then
+      echo EXISTS
+    else
+      createdb "{{ item.name }}" && echo CREATED
+    fi
+  become: true
+  become_user: postgres
+  loop: "{{ postgres_databases | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: postgres_db_created
+  changed_when: "'CREATED' in postgres_db_created.stdout"      # only when it actually created
+  when: not ansible_check_mode
+  tags: [databases]
+
+- name: "POSTGRES | Create roles + grant on their DB"
+  ansible.builtin.shell: |
+    psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='{{ item.name }}'" | grep -q 1 \
+      || psql -c "CREATE ROLE \"{{ item.name }}\" LOGIN PASSWORD '{{ item.password | default('') }}'"
+    {% if item.db is defined %}
+    psql -c "GRANT ALL PRIVILEGES ON DATABASE \"{{ item.db }}\" TO \"{{ item.name }}\""
+    {% endif %}
+  become: true
+  become_user: postgres
+  loop: "{{ postgres_users | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true                      # carries the role password
+  changed_when: false
+  when: not ansible_check_mode
+  tags: [databases]

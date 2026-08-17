@@ -1,0 +1,7 @@
+---
+# SERVICE: hello-web — the simplest possible "instructions": pick ONE brick
+# (nginx) and add a page. A newcomer's on-ramp that runs out-of-the-box in the
+# local lab. (Add another brick — e.g. `- role: components/postgres` — to make it
+# multi-brick; see notes-api for that pattern.)
+dependencies:
+  - role: components/nginx

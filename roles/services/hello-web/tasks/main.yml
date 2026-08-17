@@ -1,0 +1,4 @@
+---
+- name: "Hello-web assembled from the nginx brick"
+  ansible.builtin.debug:
+    msg: "hello-web is up on port {{ nginx_port | default(80) }} — assembled from bricks, no new infra code."

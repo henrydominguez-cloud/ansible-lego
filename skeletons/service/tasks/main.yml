@@ -1,0 +1,6 @@
+---
+# The bricks (meta deps) do the heavy lifting. Only service-specific
+# finalisation goes here (render an app config, restart, etc.).
+- name: "__SERVICE__ | Composed from bricks"
+  ansible.builtin.debug:
+    msg: "__SERVICE__ deployed — assembled from bricks, no new infra code."

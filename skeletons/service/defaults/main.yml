@@ -1,0 +1,7 @@
+---
+# =============================================================================
+# SERVICE: __SERVICE__ — per-ENVIRONMENT knobs (overridable by inventory)
+# =============================================================================
+# Put here values that change per environment (dev/prod) — inventory group_vars
+# can override these. Example:
+# some_port: 8080

@@ -1,0 +1,79 @@
+---
+# =============================================================================
+# BRICK: components/nginx — role entry point
+# =============================================================================
+# Tags: install | config | service
+# =============================================================================
+
+- name: "NGINX | Gather facts"
+  ansible.builtin.setup:
+  tags: [always]
+
+- name: "NGINX | Require Enterprise Linux 8/9"
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "RedHat"
+      - ansible_distribution_major_version in ['8', '9']
+    fail_msg: "This brick supports Enterprise Linux 8/9 only."
+  tags: [always]
+
+- name: "NGINX | Install nginx (repo)"
+  ansible.builtin.yum:
+    name: "{{ nginx_package }}"
+    state: present
+  register: nginx_repo_install
+  ignore_errors: "{{ nginx_install_source == 'auto' }}"
+  when: nginx_install_source in ['repo', 'auto']
+  tags: [install]
+
+- name: "NGINX | Find local RPMs"
+  ansible.builtin.find:
+    paths: "{{ nginx_local_rpms_dir }}"
+    patterns: "*.rpm"
+  register: nginx_local_found
+  when: >-
+    nginx_install_source == 'local'
+    or (nginx_install_source == 'auto' and nginx_repo_install is failed)
+  tags: [install]
+
+- name: "NGINX | Install nginx from local RPMs (offline)"
+  ansible.builtin.yum:
+    name: "{{ nginx_local_found.files | map(attribute='path') | list }}"
+    state: present
+    disable_gpg_check: true
+  when:
+    - nginx_local_found is not skipped
+    - nginx_local_found.files | length > 0
+  tags: [install]
+
+- name: "NGINX | Ensure the webroot exists"
+  ansible.builtin.file:
+    path: "{{ nginx_webroot }}"
+    state: directory
+    mode: "0755"
+  tags: [config]
+
+- name: "NGINX | Deploy the site server block"
+  ansible.builtin.template:
+    src: site.conf.j2
+    dest: /etc/nginx/conf.d/site.conf
+    mode: "0644"
+  notify: Restart nginx
+  tags: [config]
+
+- name: "NGINX | Deploy the index page (when a service provides one)"
+  ansible.builtin.copy:
+    src: "{{ nginx_index_src }}"
+    dest: "{{ nginx_webroot }}/index.html"
+    mode: "0644"
+  when: nginx_index_src | default('') | length > 0
+  notify: Restart nginx
+  tags: [config]
+
+- name: "NGINX | Enable and start nginx"
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+  when: not ansible_check_mode
+  tags: [service]

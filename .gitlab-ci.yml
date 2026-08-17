@@ -1,0 +1,71 @@
+# =============================================================================
+# GitLab CI — lint + gated deploys.
+# Safety model (from the proposal):
+#   dev  -> deployable from ANY branch
+#   prod -> deployable ONLY from the protected `main` branch (manual trigger)
+# =============================================================================
+
+# ── When does a pipeline run at all? ──
+# By default GitLab starts a pipeline on EVERY push. This `workflow` block limits
+# that: a pipeline is created ONLY for Merge Requests and for the default branch
+# (main). Pushing to a work branch runs NOTHING — the checks run when you open an
+# MR, and the deploy gates exist on main. Adjust to taste:
+#   * MR-only (no pipeline even on main pushes): keep just the MR rule below.
+#   * Skip a single push regardless: put "[skip ci]" in the commit message.
+#   * Disable CI entirely: remove/rename this file (or Settings > CI/CD).
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'   # runs for MRs
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'          # and for main
+    - if: '$CI_COMMIT_TAG'                                   # and for tags
+    - when: never                                            # otherwise: no pipeline
+
+stages: [lint, deploy]
+
+variables:
+  ANSIBLE_FORCE_COLOR: "1"
+
+# --- static checks: run in every pipeline the workflow allows (MR / main) -----
+lint:
+  stage: lint
+  image: python:3.12-slim
+  before_script:
+    - pip install --quiet ansible-core ansible-lint yamllint
+    - ansible-galaxy collection install -r requirements.yml || true
+  script:
+    - yamllint .
+    - ansible-lint
+    - ansible-playbook -i inventory/alpha-dev  playbooks/site.yml --syntax-check
+    - ansible-playbook -i inventory/alpha-prod playbooks/site.yml --syntax-check
+
+# --- DEV deploy: any branch, manual ---------------------------------------
+deploy_dev:
+  stage: deploy
+  image: python:3.12-slim
+  before_script:
+    - pip install --quiet ansible-core
+    - ansible-galaxy collection install -r requirements.yml
+  script:
+    - ansible-playbook -i inventory/alpha-dev playbooks/site.yml
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      when: manual
+      allow_failure: true
+  environment:
+    name: dev
+
+# --- PROD deploy: ONLY main, manual ---------------------------------------
+deploy_prod:
+  stage: deploy
+  image: python:3.12-slim
+  before_script:
+    - pip install --quiet ansible-core
+    - ansible-galaxy collection install -r requirements.yml
+  script:
+    - ansible-playbook -i inventory/alpha-prod playbooks/site.yml
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+  environment:
+    name: production

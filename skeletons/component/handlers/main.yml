@@ -1,0 +1,7 @@
+---
+- name: Restart __COMPONENT__
+  ansible.builtin.service:
+    name: "__COMPONENT__"
+    state: restarted
+    enabled: true
+  when: not ansible_check_mode

@@ -1,0 +1,25 @@
+---
+# =============================================================================
+# BRICK: components/postgres — PostgreSQL server
+# =============================================================================
+# Installs PostgreSQL, initialises the data dir, runs it, and (optionally)
+# creates databases + roles that a service asks for. Arch-native on EL, so it
+# runs in the local lab on arm64 too.
+
+postgres_package: "postgresql-server"
+postgres_client_package: "postgresql"
+
+# Install source: repo (default) | local | auto — see docs/os-and-install-sources.md
+postgres_install_source: "repo"
+postgres_local_rpms_dir: "{{ playbook_dir }}/../resources/postgres/rpms"
+
+postgres_service: "postgresql"
+postgres_data_dir: "/var/lib/pgsql/data"
+
+# NOTE (precedence): postgres_port / postgres_databases / postgres_users are
+# provided by SERVICES, so they are NOT defaulted here (a brick default would
+# shadow the service's value during the brick's run). The tasks reference them
+# with `| default(...)`. See docs/getting-started.md → "The one precedence gotcha".
+#   postgres_port       -> default(5432) at use
+#   postgres_databases  -> [] ; each item: { name: mydb }
+#   postgres_users      -> [] ; each item: { name: u, password: "...", db: mydb }

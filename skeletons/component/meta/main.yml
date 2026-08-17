@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: __COMPONENT__
+  author: "Henry Domínguez Grullón"
+  namespace: components
+  description: "TODO: one line on what this brick installs/configures."
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: EL
+      versions: ["8", "9"]
+dependencies: []          # bricks are leaves — no deps

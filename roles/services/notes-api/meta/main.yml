@@ -1,0 +1,7 @@
+---
+# SERVICE: notes-api — a multi-brick example: a Postgres-backed API fronted by
+# nginx. Shows a service composing TWO bricks. (The API binary itself is a
+# placeholder; the infra — DB + web front — is real and runs in the lab.)
+dependencies:
+  - role: components/postgres
+  - role: components/nginx

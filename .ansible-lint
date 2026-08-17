@@ -1,0 +1,17 @@
+# ansible-lint config. Profile 'moderate' is the target quality bar.
+profile: moderate
+
+# `role-name` is intentionally relaxed: this kit places roles under
+# roles/components/ and roles/services/, so playbooks and meta deps reference
+# them by PATH (e.g. components/nginx), and service roles use readable hyphenated
+# names (hello-web). Both are deliberate design choices of the "Lego" layout.
+skip_list:
+  - role-name
+
+exclude_paths:
+  - .venv-lint/
+  - .ansible/
+  - docs/
+  - skeletons/        # contain __COMPONENT__/__SERVICE__ placeholders (not valid roles)
+  - resources/
+  - lab/docker-compose.yml

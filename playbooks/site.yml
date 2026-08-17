@@ -1,0 +1,15 @@
+---
+# site.yml — deploy ALL services to ALL their hosts in one run.
+#   ansible-playbook -i inventory/alpha-prod playbooks/site.yml
+# Add one play per service as you create them (make new-service NAME=...).
+- name: Deploy hello-web
+  hosts: hello
+  become: true
+  roles:
+    - role: services/hello-web
+
+- name: Deploy notes-api
+  hosts: notes
+  become: true
+  roles:
+    - role: services/notes-api

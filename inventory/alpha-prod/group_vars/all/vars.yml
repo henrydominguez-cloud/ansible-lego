@@ -1,0 +1,10 @@
+---
+# Applies to every host in the alpha-prod inventory.
+env: prod
+
+# ===========================================================================
+# Secret wiring — the real value lives in group_vars/all/vault.yml (ansible-vault
+# encrypted). Each real var maps to its vault_* value with a safe fallback so the
+# repo runs BEFORE vault.yml exists. See docs/secrets-vault.md.
+# ===========================================================================
+notes_db_password: "{{ vault_notes_db_password | default('change-me-notes') }}"

@@ -1,0 +1,6 @@
+---
+# =============================================================================
+# SERVICE: hello-web (nginx + monitoring) — the "hello world" of the Lego model
+# =============================================================================
+# Per-environment knob stays in defaults/ so inventory can override it.
+nginx_port: 8080

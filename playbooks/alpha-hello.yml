@@ -1,0 +1,9 @@
+---
+# The newcomer on-ramp: deploy hello-web (nginx + monitoring).
+#   ansible-playbook -i inventory/alpha-prod playbooks/alpha-hello.yml
+# Runs end-to-end in the local lab (nginx is arch-native): make lab-run PB=alpha-hello
+- name: Deploy hello-web
+  hosts: hello
+  become: true
+  roles:
+    - role: services/hello-web

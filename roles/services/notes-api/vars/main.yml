@@ -1,0 +1,16 @@
+---
+# =============================================================================
+# SERVICE: notes-api — IDENTITY / composition knobs (in vars/ so they beat the
+# bricks' own defaults during the bricks' execution).
+# =============================================================================
+
+# What the postgres brick should create for this service:
+postgres_databases:
+  - name: "notes"
+postgres_users:
+  - name: "notes"
+    db: "notes"
+    password: "{{ notes_db_password }}"   # wired from defaults/inventory/vault
+
+# The page the nginx brick should serve (this service's own content):
+nginx_index_src: "{{ playbook_dir }}/../roles/services/notes-api/files/index.html"

@@ -1,0 +1,10 @@
+---
+# =============================================================================
+# SERVICE: notes-api — per-ENVIRONMENT knobs (inventory can override these)
+# =============================================================================
+nginx_port: 8081              # web front port
+postgres_port: 5432           # DB port
+
+# SECRET — override via inventory group_vars/all/vault.yml (vault_notes_db_password).
+# Falls back to a throwaway value so the lab runs without vault.
+notes_db_password: "{{ vault_notes_db_password | default('change-me-notes') }}"

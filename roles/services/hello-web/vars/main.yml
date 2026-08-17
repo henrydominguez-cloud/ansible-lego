@@ -1,0 +1,9 @@
+---
+# Identity knob in vars/ (not defaults/) so it beats the nginx brick's own
+# default during the brick's execution — see docs/local-testing.md.
+nginx_index_src: "{{ playbook_dir }}/../roles/services/hello-web/files/index.html"
+
+monitoring_filebeat_inputs:
+  - type: log
+    paths: ["/var/log/nginx/*.log"]
+    fields: { service: hello-web }

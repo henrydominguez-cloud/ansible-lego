@@ -1,0 +1,20 @@
+---
+# =============================================================================
+# BRICK: components/__COMPONENT__ — defaults (LOWEST precedence)
+# =============================================================================
+# A "brick" packages ONE piece of technology so services can reuse it.
+# Fill in the knobs below. Rules of thumb:
+#   * Give brick-level tunables sensible defaults here (things services rarely set).
+#   * Do NOT default a knob you expect the SERVICE to provide — a brick's own
+#     defaults SHADOW the caller's during the brick's run. Reference those with
+#     `{{ some_knob | default(fallback) }}` at the point of use instead.
+#     (See docs/getting-started.md → "The one precedence gotcha".)
+
+# Package + where it comes from (repo | local | auto). See docs/os-and-install-sources.md
+__COMPONENT___package: "__COMPONENT__"
+__COMPONENT___install_source: "repo"
+__COMPONENT___local_rpms_dir: "{{ playbook_dir }}/../resources/__COMPONENT__/rpms"
+
+# Example service-tunable knob — NOTE: not defaulted here on purpose (see above);
+# the tasks/templates use `| default(...)`:
+#   __COMPONENT___port  -> default(8080) at use

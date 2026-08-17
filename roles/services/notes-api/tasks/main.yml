@@ -1,0 +1,4 @@
+---
+- name: "Notes-api assembled from the postgres + nginx bricks"
+  ansible.builtin.debug:
+    msg: "notes-api up: nginx :{{ nginx_port | default(80) }} in front, Postgres db 'notes' behind — no new infra code."

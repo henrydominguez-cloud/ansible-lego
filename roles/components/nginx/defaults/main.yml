@@ -1,0 +1,27 @@
+---
+# =============================================================================
+# BRICK: components/nginx — a tiny, universally-understood web brick
+# =============================================================================
+# This is the "hello world" brick: install nginx, serve a document root, run it
+# as a service. It shows the Lego pattern with zero domain knowledge required.
+# nginx is arch-native on EL (AppStream), so it actually runs
+# in the local lab on Apple Silicon (arm64) too.
+
+nginx_package: "nginx"
+
+# ── Install source: repo (default) | local | auto (docs/os-and-install-sources.md)
+# nginx ships in the EL AppStream, so the default 'repo' needs no extra repo.
+nginx_install_source: "repo"
+nginx_local_rpms_dir: "{{ playbook_dir }}/../resources/nginx/rpms"
+
+# ── Site ──
+# NOTE: nginx_port is intentionally NOT defaulted here. A brick's own defaults
+# SHADOW a caller's defaults during the brick's execution, so a value here would
+# silently beat what a service sets. The template uses `| default(80)` instead,
+# so the service (hello-web sets 8080) or inventory wins. See docs/getting-started.md.
+nginx_server_name: "_"
+nginx_webroot: "/usr/share/nginx/html"
+# A service points this at its own index (identity knob -> set it in the
+# service's vars/main.yml so it beats this brick's default). Empty = leave the
+# stock nginx page.
+nginx_index_src: ""

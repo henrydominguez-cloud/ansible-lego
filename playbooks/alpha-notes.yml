@@ -1,0 +1,9 @@
+---
+# A two-brick example: notes-api = postgres + nginx.
+#   ansible-playbook -i inventory/alpha-prod playbooks/alpha-notes.yml
+# Runs end-to-end in the local lab:  make lab-run PB=alpha-notes
+- name: Deploy notes-api
+  hosts: notes
+  become: true
+  roles:
+    - role: services/notes-api

@@ -1,0 +1,7 @@
+---
+# One brick -> one (group of) host(s): make lab-run PB=install-nginx (target=hello)
+- name: Install nginx standalone
+  hosts: "{{ target | default('hello') }}"
+  become: true
+  roles:
+    - role: components/nginx

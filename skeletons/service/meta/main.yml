@@ -1,0 +1,6 @@
+---
+# SERVICE: __SERVICE__ — "instructions": pick the bricks this service needs.
+# Meta-dependencies run (in order) BEFORE this role's own tasks.
+dependencies:
+  - role: components/CHANGE_ME_BRICK
+  # - role: components/CHANGE_ME_ANOTHER

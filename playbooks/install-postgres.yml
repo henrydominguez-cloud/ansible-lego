@@ -1,0 +1,7 @@
+---
+# One brick -> one (group of) host(s): make lab-run PB=install-postgres (target=notes)
+- name: Install PostgreSQL standalone
+  hosts: "{{ target | default('notes') }}"
+  become: true
+  roles:
+    - role: components/postgres

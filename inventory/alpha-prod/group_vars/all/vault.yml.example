@@ -1,0 +1,16 @@
+---
+# =============================================================================
+# ansible-vault SECRETS for alpha-prod — EXAMPLE (plaintext, committed)
+# =============================================================================
+# Workflow:
+#   1. cp vault.yml.example vault.yml
+#   2. put REAL secret values in vault.yml
+#   3. ansible-vault encrypt vault.yml
+#   4. (optional) un-ignore vault.yml in .gitignore to commit it ENCRYPTED
+# 'vault_*' names are consumed by group_vars/all/vars.yml (the wiring layer).
+
+# notes-api: the password for the 'notes' Postgres role.
+vault_notes_db_password: "change-me"
+
+# Add one line per secret your bricks/services need, e.g.:
+# vault_myapp_api_key: "change-me"
