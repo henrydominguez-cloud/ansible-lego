@@ -13,7 +13,10 @@
 # Package + where it comes from (repo | local | auto). See docs/os-and-install-sources.md
 __COMPONENT___package: "__COMPONENT__"
 __COMPONENT___install_source: "repo"
+# local/auto: RPMs are read from this dir on the CONTROLLER and copied to
+# __COMPONENT___remote_rpms_dir on the target before being installed.
 __COMPONENT___local_rpms_dir: "{{ playbook_dir }}/../resources/__COMPONENT__/rpms"
+__COMPONENT___remote_rpms_dir: "/var/tmp/__COMPONENT__-rpms"
 
 # Example service-tunable knob — NOTE: not defaulted here on purpose (see above);
 # the tasks/templates use `| default(...)`:

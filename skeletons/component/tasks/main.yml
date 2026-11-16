@@ -26,24 +26,59 @@
   when: __COMPONENT___install_source in ['repo', 'auto']
   tags: [install]
 
-- name: "__COMPONENT__ | Find local RPMs"
+# The RPMs are vendored on the CONTROLLER (resources/__COMPONENT__/rpms). They
+# are looked up there, copied to the target, and installed from that copy.
+- name: "__COMPONENT__ | Find local RPMs (on the controller)"
   ansible.builtin.find:
     paths: "{{ __COMPONENT___local_rpms_dir }}"
     patterns: "*.rpm"
+  delegate_to: localhost
+  become: false
   register: __COMPONENT___local_found
   when: >-
     __COMPONENT___install_source == 'local'
     or (__COMPONENT___install_source == 'auto' and __COMPONENT___repo_install is failed)
   tags: [install]
 
+- name: "__COMPONENT__ | Require at least one local RPM"
+  ansible.builtin.assert:
+    that:
+      - __COMPONENT___local_found.files | length > 0
+    fail_msg: >-
+      __COMPONENT___install_source={{ __COMPONENT___install_source }} needs .rpm files in
+      {{ __COMPONENT___local_rpms_dir }} (on the controller), but none were found.
+  when: __COMPONENT___local_found is not skipped
+  tags: [install]
+
+- name: "__COMPONENT__ | Create the RPM staging dir on the target"
+  ansible.builtin.file:
+    path: "{{ __COMPONENT___remote_rpms_dir }}"
+    state: directory
+    mode: "0755"
+  when: __COMPONENT___local_found is not skipped
+  tags: [install]
+
+- name: "__COMPONENT__ | Copy local RPMs to the target"
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ __COMPONENT___remote_rpms_dir }}/"
+    mode: "0644"
+  loop: "{{ __COMPONENT___local_found.files | default([]) | map(attribute='path') | list }}"
+  loop_control:
+    label: "{{ item | basename }}"
+  when: __COMPONENT___local_found is not skipped
+  tags: [install]
+
 - name: "__COMPONENT__ | Install from local RPMs (offline)"
   ansible.builtin.yum:
-    name: "{{ __COMPONENT___local_found.files | map(attribute='path') | list }}"
+    name: >-
+      {{ __COMPONENT___local_found.files | map(attribute='path') | map('basename')
+         | map('regex_replace', '^', __COMPONENT___remote_rpms_dir ~ '/') | list }}
     state: present
     disable_gpg_check: true
   when:
     - __COMPONENT___local_found is not skipped
-    - __COMPONENT___local_found.files | length > 0
+    - not ansible_check_mode        # the RPMs are not on the target in check mode
   tags: [install]
 
 # --- config ----------------------------------------------------------------

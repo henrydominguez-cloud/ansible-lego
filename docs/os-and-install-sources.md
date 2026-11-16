@@ -24,7 +24,11 @@ Each install brick exposes **`<brick>_install_source`**:
 Which repo is used for `repo` is just variables you can override in
 `group_vars` (point them at your mirror). For `local`, drop `.rpm`s in the
 brick's `<brick>_local_rpms_dir` (default `resources/<brick>/rpms/`,
-git-ignored) — the brick installs every `*.rpm` found there with GPG checks off.
+git-ignored) **on the controller** — the machine that runs `ansible-playbook`.
+The brick copies every `*.rpm` found there to `<brick>_remote_rpms_dir` on the
+target (default `/var/tmp/<brick>-rpms`) and installs them from that copy with
+GPG checks off. If the directory has no `.rpm` files, the run stops with a
+clear error instead of skipping the install.
 
 ## Where to set it
 ```yaml

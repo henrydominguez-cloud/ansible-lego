@@ -12,7 +12,10 @@ nginx_package: "nginx"
 # ── Install source: repo (default) | local | auto (docs/os-and-install-sources.md)
 # nginx ships in the EL AppStream, so the default 'repo' needs no extra repo.
 nginx_install_source: "repo"
+# local/auto: RPMs are read from this dir on the CONTROLLER and copied to
+# nginx_remote_rpms_dir on the target before being installed.
 nginx_local_rpms_dir: "{{ playbook_dir }}/../resources/nginx/rpms"
+nginx_remote_rpms_dir: "/var/tmp/nginx-rpms"
 
 # ── Site ──
 # NOTE: nginx_port is intentionally NOT defaulted here. A brick's own defaults

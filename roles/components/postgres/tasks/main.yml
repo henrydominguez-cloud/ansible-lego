@@ -28,24 +28,59 @@
   when: postgres_install_source in ['repo', 'auto']
   tags: [install]
 
-- name: "POSTGRES | Find local RPMs"
+# The RPMs are vendored on the CONTROLLER (resources/postgres/rpms). They are
+# looked up there, copied to the target, and installed from that copy.
+- name: "POSTGRES | Find local RPMs (on the controller)"
   ansible.builtin.find:
     paths: "{{ postgres_local_rpms_dir }}"
     patterns: "*.rpm"
+  delegate_to: localhost
+  become: false
   register: postgres_local_found
   when: >-
     postgres_install_source == 'local'
     or (postgres_install_source == 'auto' and postgres_repo_install is failed)
   tags: [install]
 
+- name: "POSTGRES | Require at least one local RPM"
+  ansible.builtin.assert:
+    that:
+      - postgres_local_found.files | length > 0
+    fail_msg: >-
+      postgres_install_source={{ postgres_install_source }} needs .rpm files in
+      {{ postgres_local_rpms_dir }} (on the controller), but none were found.
+  when: postgres_local_found is not skipped
+  tags: [install]
+
+- name: "POSTGRES | Create the RPM staging dir on the target"
+  ansible.builtin.file:
+    path: "{{ postgres_remote_rpms_dir }}"
+    state: directory
+    mode: "0755"
+  when: postgres_local_found is not skipped
+  tags: [install]
+
+- name: "POSTGRES | Copy local RPMs to the target"
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ postgres_remote_rpms_dir }}/"
+    mode: "0644"
+  loop: "{{ postgres_local_found.files | default([]) | map(attribute='path') | list }}"
+  loop_control:
+    label: "{{ item | basename }}"
+  when: postgres_local_found is not skipped
+  tags: [install]
+
 - name: "POSTGRES | Install from local RPMs (offline)"
   ansible.builtin.yum:
-    name: "{{ postgres_local_found.files | map(attribute='path') | list }}"
+    name: >-
+      {{ postgres_local_found.files | map(attribute='path') | map('basename')
+         | map('regex_replace', '^', postgres_remote_rpms_dir ~ '/') | list }}
     state: present
     disable_gpg_check: true
   when:
     - postgres_local_found is not skipped
-    - postgres_local_found.files | length > 0
+    - not ansible_check_mode        # the RPMs are not on the target in check mode
   tags: [install]
 
 # --- initialise the data directory (only once) -----------------------------
@@ -77,8 +112,15 @@
   when: not ansible_check_mode
   tags: [service]
 
+# A changed port only takes effect after the restart. Run it now, so the
+# psql/createdb calls below reach the server on the port they are given.
+- name: "POSTGRES | Apply a pending restart before creating databases"
+  ansible.builtin.meta: flush_handlers
+  tags: [service, databases]
+
 # --- optional databases + roles a SERVICE asked for ------------------------
 # Idempotent via a SELECT guard (avoids needing psycopg2 on the target).
+# PGPORT makes psql and createdb use the service's port instead of 5432.
 - name: "POSTGRES | Create databases"
   ansible.builtin.shell: |
     if psql -tAc "SELECT 1 FROM pg_database WHERE datname='{{ item.name }}'" | grep -q 1; then
@@ -88,11 +130,13 @@
     fi
   become: true
   become_user: postgres
+  environment:
+    PGPORT: "{{ postgres_port | default(5432) | string }}"
   loop: "{{ postgres_databases | default([]) }}"
   loop_control:
     label: "{{ item.name }}"
   register: postgres_db_created
-  changed_when: "'CREATED' in postgres_db_created.stdout"      # only when it actually created
+  changed_when: "'stdout' in postgres_db_created and 'CREATED' in postgres_db_created.stdout"      # only when it actually created
   when: not ansible_check_mode
   tags: [databases]
 
@@ -105,6 +149,8 @@
     {% endif %}
   become: true
   become_user: postgres
+  environment:
+    PGPORT: "{{ postgres_port | default(5432) | string }}"
   loop: "{{ postgres_users | default([]) }}"
   loop_control:
     label: "{{ item.name }}"
