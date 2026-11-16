@@ -4,7 +4,8 @@ Run the roles against throwaway **Enterprise Linux containers** on your machine 
 no VMs, no real hosts. Lives in `lab/`, driven by the `Makefile` (`make lab-*`).
 
 ## Prerequisites
-- Docker running (`docker info` works — on macOS start Docker Desktop).
+- Docker running (`docker info` works — on macOS start Docker Desktop, or
+  `colima start`).
 - Collections installed: `make deps` (includes `community.docker`).
 
 ## Quick start
@@ -24,7 +25,13 @@ docker exec rocky9a curl -s localhost:8080 | grep hello-web
 docker exec -u postgres rocky9b psql -tAc "SELECT datname FROM pg_database WHERE datname='notes'"
 ```
 
-## Two caveats worth knowing
+## Caveats worth knowing
+- **Colima / Ubuntu Docker hosts:** two settings exist for them (verified on
+  Colima; not re-tested on Docker Desktop). `cgroup: host` in `lab/docker-compose.yml` lets EL9's
+  systemd boot (without it the EL9 containers exit 255). `ansible_become_method:
+  su` in `lab/inventory/hosts.yml` avoids `sudo`, whose PAM account check is
+  blocked by the host's AppArmor profile for `unix_chkpwd`
+  (`sudo: PAM account management error`).
 - **arm64 + x86_64-only RPMs:** if a brick installs a package that only ships
   x86_64 (some vendor RPMs), a native arm64 container can't install it — use
   `--check`/structural mode, or `make lab-up LAB_PLATFORM=linux/amd64` (emulated).
